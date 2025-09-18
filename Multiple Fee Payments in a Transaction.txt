@@ -1,0 +1,95 @@
+-- Create the FeePayments table
+CREATE TABLE FeePayments (
+    payment_id INT PRIMARY KEY,
+    student_name VARCHAR(100) NOT NULL,
+    amount DECIMAL(10,2) CHECK (amount > 0),
+    payment_date DATE NOT NULL
+);
+
+-- Start a transaction
+BEGIN TRANSACTION;
+
+-- Insert multiple payment records
+INSERT INTO FeePayments (payment_id, student_name, amount, payment_date)
+VALUES 
+    (1, 'Ashish', 5000.00, '2024-06-01'),
+    (2, 'Smaran', 4500.00, '2024-06-02'),
+    (3, 'Vaibhav', 5500.00, '2024-06-03');
+
+-- Commit the transaction
+COMMIT;
+
+-- Display the inserted records
+SELECT * FROM FeePayments;
+-- Assume the table already has the 3 records from Part A
+-- Start a new transaction
+BEGIN TRANSACTION;
+
+-- Attempt to insert two records, one valid and one invalid
+INSERT INTO FeePayments (payment_id, student_name, amount, payment_date)
+VALUES 
+    (4, 'Kiran', 6000.00, '2024-06-04'),  -- Valid
+    (1, 'Ashish', -1000.00, '2024-06-05'); -- Invalid (duplicate payment_id and negative amount)
+
+-- If an error occurs, rollback the transaction
+-- Most DBMS will automatically rollback on constraint violation, but we include explicit handling
+ROLLBACK;
+
+-- Display the table state to confirm no new records were added
+SELECT * FROM FeePayments;
+-- Start a new transaction
+BEGIN TRANSACTION;
+
+-- Attempt to insert two records, one valid and one invalid
+INSERT INTO FeePayments (payment_id, student_name, amount, payment_date)
+VALUES 
+    (4, 'Kiran', 6000.00, '2024-06-04'), -- Valid
+    (5, NULL, 7000.00, '2024-06-05');    -- Invalid (NULL student_name)
+
+-- Rollback on failure
+ROLLBACK;
+
+-- Display the table state to confirm no new records were added
+SELECT * FROM FeePayments;
+-- Ensure the table exists with initial data from Part A
+-- (Assuming FeePayments has the 3 records from Part A)
+
+-- Session 1: Successful transaction (demonstrates Atomicity, Consistency, Durability)
+BEGIN TRANSACTION;
+
+INSERT INTO FeePayments (payment_id, student_name, amount, payment_date)
+VALUES 
+    (4, 'Kiran', 6000.00, '2024-06-04'),
+    (5, 'Neha', 7000.00, '2024-06-05');
+
+COMMIT;
+
+-- Session 2: Failed transaction (demonstrates Atomicity, Consistency)
+BEGIN TRANSACTION;
+
+INSERT INTO FeePayments (payment_id, student_name, amount, payment_date)
+VALUES 
+    (6, 'Ravi', 8000.00, '2024-06-06'),
+    (4, 'Anil', 9000.00, '2024-06-07'); -- Fails due to duplicate payment_id
+
+ROLLBACK;
+
+-- Session 3: Simulate Isolation (using a second session to read data during an uncommitted transaction)
+-- In Session 3A: Start a transaction but don't commit yet
+BEGIN TRANSACTION;
+
+INSERT INTO FeePayments (payment_id, student_name, amount, payment_date)
+VALUES 
+    (6, 'Ravi', 8000.00, '2024-06-06');
+
+-- In Session 3B (concurrent session): Read the table (demonstrates Isolation)
+SELECT * FROM FeePayments; -- Should not see Ravi's record yet
+
+-- In Session 3A: Commit the transaction
+COMMIT;
+
+-- In Session 3B: Read again after commit
+SELECT * FROM FeePayments; -- Now includes Ravi's record
+
+-- Final state of the table
+SELECT * FROM FeePayments;
